@@ -6,8 +6,9 @@
 
 const std = @import("std");
 const sound = @import("sound/index.zig");
-
 const debug = std.debug;
+
+const global_alloc = debug.global_allocator;
 
 // fn disassemble(code: []const u8, pc: i32) void {
 //     const nibble = @bitCast([]const u4, code[0]);
@@ -22,7 +23,6 @@ const debug = std.debug;
 // }
 
 pub fn main() !void {
-    var allocator = debug.global_allocator;
-    var player = try sound.Player.new(allocator, 44100 , 2, 2, 512);
+    var player = try sound.Player.new(global_alloc, 44100 , 2, 2, 512);
     try player.close();
 }
