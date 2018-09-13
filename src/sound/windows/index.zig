@@ -31,13 +31,17 @@ pub const Header = struct {
             .lpNext = undefined,
             .reserved = undefined,
         };
-        switch (MMSystem.waveOutPrepareHeader(
+        // error is here
+        const err = MMSystem.waveOutPrepareHeader(
             handle, &result.wavehdr,
-            u32(result.buffer.len())).to_err()
-        ) {
+            u32(result.buffer.len())).to_err();
+        std.debug.warn("DEBUG_2\n");
+
+        switch (err) {
             error.Ok => {},
-            else => |err| return err,
+            else => |e| return e,
         }
+        std.debug.warn("DEBUG_2\n");
         return result;
     }
 
@@ -88,6 +92,8 @@ pub const Player = struct {
             .cbSize = u16(0),
         };
 
+        std.debug.warn("DEBUG_0\n");
+
         switch (MMSystem.waveOutOpen(
             &handle, @intToPtr(&usize, MMSystem.WAVE_MAPPER),
             &format, null, null, MMSystem.CALLBACK_NULL).to_err()
@@ -103,6 +109,8 @@ pub const Player = struct {
             .tmp = try Buffer.initSize(allocator, buf_size)
         };
 
+        std.debug.warn("DEBUG_1\n");
+
         for (result.headers) |*header| {
             *header = try Header.new(allocator, result.handle, buf_size);
         }
@@ -110,7 +118,7 @@ pub const Player = struct {
         return result;
     }
 
-    pub fn read(self: &Self, data: []u8) !void {
+    pub fn write(self: &Self, data: []u8) !void {
         const n = min(data.len, max(0, self.buf_size - self.tmp.len()));
         self.tmp.append(data[0..n]);
         if (self.tmp.len() < self.buf_size) {
@@ -127,7 +135,7 @@ pub const Player = struct {
 
         self.tmp.resize(0);
 
-        // return;
+        return;
     }
 
     pub fn close(self: &Self) !void {
@@ -141,5 +149,7 @@ pub const Player = struct {
         }
 
         self.tmp.deinit();
+        
+        return;
     }
 };
