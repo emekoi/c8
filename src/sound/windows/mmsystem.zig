@@ -33,14 +33,14 @@ pub const WaveFormatEx = extern struct {
 };
 
 
-pub extern "winmm" fn waveOutOpen(phwo: &isize, uDeviceID: &usize,
-    pwfx: &const WaveFormatEx, dwCallback: ?&usize,
+pub extern "winmm" stdcallcc fn waveOutOpen(phwo: &isize, uDeviceID: &usize,
+    pwfx: &WaveFormatEx, dwCallback: ?&usize,
     dwCallbackInstance: ?&usize, fdwOpen: usize) MMRESULT;
 
-pub extern "winmm" fn waveOutClose(hwo: isize) MMRESULT;
+pub extern "winmm" stdcallcc fn waveOutClose(hwo: isize) MMRESULT;
 
-pub extern "winmm" fn waveOutPrepareHeader(hwo: isize, pwh: &WaveHdr, cbwh: u32) MMRESULT;
+pub extern "winmm" stdcallcc fn waveOutPrepareHeader(hwo: isize, pwh: &WaveHdr, cbwh: u32) MMRESULT;
 
-pub extern "winmm" fn waveOutUnprepareHeader(hwo: isize, pwh: &WaveHdr, cbwh: u32) MMRESULT;
+pub extern "winmm" stdcallcc fn waveOutUnprepareHeader(hwo: isize, pwh: &WaveHdr, cbwh: u32) MMRESULT;
 
-pub extern "winmm" fn waveOutWrite(hwo: isize, pwh: &WaveHdr, cbwh: u32) MMRESULT;
+pub extern "winmm" stdcallcc fn waveOutWrite(hwo: isize, pwh: &WaveHdr, cbwh: u32) MMRESULT;
