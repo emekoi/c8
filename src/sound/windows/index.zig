@@ -26,22 +26,24 @@ pub const Header = struct {
             .dwBufferLength = u32(buf_size),
             .dwBytesRecorded = undefined,
             .dwUser = undefined,
-            .dwFlags = undefined,
+            .dwFlags = 0,
             .dwLoops = undefined,
             .lpNext = undefined,
             .reserved = undefined,
         };
-        // error is here
+        
+        // error is here 
+        std.debug.warn("DEBUG_BEGIN\n");
         const err = MMSystem.waveOutPrepareHeader(
             handle, &result.wavehdr,
-            u32(result.buffer.len())).to_err();
-        std.debug.warn("DEBUG_2\n");
+           @sizeOf(MMSystem.WaveHdr)).to_err();
+        std.debug.warn("DEBUG_END\n");
 
         switch (err) {
             error.Ok => {},
             else => |e| return e,
         }
-        std.debug.warn("DEBUG_2\n");
+        
         return result;
     }
 
@@ -58,7 +60,10 @@ pub const Header = struct {
     }
 
     pub fn destroy(self: &Self, handle: isize) !void {
-        switch (MMSystem.waveOutUnprepareHeader(handle, &self.wavehdr, @sizeOf(MMSystem.WaveHdr)).to_err()) {
+        switch (MMSystem.waveOutUnprepareHeader(
+            handle, &self.wavehdr,
+            @sizeOf(MMSystem.WaveHdr)).to_err()
+        ) {
             error.Ok => {},
             else => |err| return err,
         }
@@ -92,8 +97,6 @@ pub const Player = struct {
             .cbSize = u16(0),
         };
 
-        std.debug.warn("DEBUG_0\n");
-
         switch (MMSystem.waveOutOpen(
             &handle, @intToPtr(&usize, MMSystem.WAVE_MAPPER),
             &format, null, null, MMSystem.CALLBACK_NULL).to_err()
@@ -108,8 +111,6 @@ pub const Player = struct {
             .buf_size = buf_size,
             .tmp = try Buffer.initSize(allocator, buf_size)
         };
-
-        std.debug.warn("DEBUG_1\n");
 
         for (result.headers) |*header| {
             *header = try Header.new(allocator, result.handle, buf_size);
