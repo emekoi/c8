@@ -5,7 +5,7 @@
 //
 
 const std = @import("std");
-const sound = @import("sound/index.zig");
+const audio = @import("audio/player.zig");
 const debug = std.debug;
 
 const global_alloc = debug.global_allocator;
@@ -23,6 +23,6 @@ const global_alloc = debug.global_allocator;
 // }
 
 pub fn main() !void {
-    var player = try sound.Player.new(global_alloc, 44100 , 2, 2, 512);
+    var player = try audio.Player.new(global_alloc, 44100 , 2, 2, 2048);
     try player.close();
 }

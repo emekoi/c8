@@ -5,9 +5,8 @@
 //
 
 const std = @import("std");
-const os = std.os;
-
 const windows = @import("windows/index.zig");
+const time = std.os.time;
 
 fn PlayerImpl(comptime T: type) type {
     return struct {
@@ -20,7 +19,7 @@ fn PlayerImpl(comptime T: type) type {
         bps: usize,
         buf_size: usize,
 
-        pub fn new(allocator: &std.mem.Allocator, sample_rate: usize, channel_count: usize, bps: usize, buf_size: usize) !Player {
+        pub fn new(allocator: *std.mem.Allocator, sample_rate: usize, channel_count: usize, bps: usize, buf_size: usize) !Self {
             return Self {
                 .player = try T.new(allocator, sample_rate, channel_count, bps, buf_size),
                 .sample_rate = sample_rate,
@@ -30,11 +29,11 @@ fn PlayerImpl(comptime T: type) type {
             };
         }
 
-        pub fn bytes_per_sec(self: &Self) usize {
+        pub fn bytes_per_sec(self: *Self) usize {
             return self.sample_rate * self.channel_count * self.bps;
         }
 
-        pub fn write(self: &Self, data: []u8) !void {
+        pub fn write(self: *Self, data: []u8) !void {
             var written = 0;
             while (data.len > 0) {
                 const n = try self.player.write(data);
@@ -43,13 +42,13 @@ fn PlayerImpl(comptime T: type) type {
                 data = data[n..];
 
                 if (data.len > 0) {
-                    os.sleep(0, Second * self.buf_size / self.bytes_per_sec() / 8);
+                    time.sleep(0, Second * self.buf_size / self.bytes_per_sec() / 8);
                 }
             }
         }
 
-        pub fn close(self: &Self) !void {
-            os.sleep(0, Second * self.buf_size / self.bytes_per_sec());
+        pub fn close(self: *Self) !void {
+            time.sleep(0, Second * self.buf_size / self.bytes_per_sec());
             try self.player.close();
         }
     };

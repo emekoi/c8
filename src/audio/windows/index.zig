@@ -5,25 +5,26 @@
 //
 
 const std = @import("std");
-
-const Buffer = std.Buffer;
 const Allocator = std.mem.Allocator;
-const Error = @import("errors.zig");
-const MMSystem = @import("mmsystem.zig");
+const windows = std.os.windows;
+
+const buffer = @import("../util/buffer.zig");
+const _ = @import("errors.zig");
+const mmsystem = @import("mmsystem.zig");
 
 
 pub const Header = struct {
     const Self = this;
-    buffer: Buffer,
-    wavehdr: MMSystem.WaveHdr,
+    buffer: buffer.Buffer(u8),
+    wavehdr: mmsystem.WaveHdr,
 
-    pub fn new(allocator: &Allocator, handle: isize, buf_size: usize) !Header {
+    pub fn new(allocator: *Allocator, handle: windows.HANDLE, buf_size: usize) !Self {
         var result: Self = undefined;
 
-        result.buffer = try Buffer.initSize(allocator, buf_size);
-        result.wavehdr = MMSystem.WaveHdr {
+        result.buffer = try buffer.Buffer(u8).initSize(allocator, buf_size);
+        result.wavehdr = mmsystem.WaveHdr {
             .lpData = result.buffer.ptr(),
-            .dwBufferLength = u32(buf_size),
+            .dwBufferLength = @intCast(windows.DWORD, buf_size),
             .dwBytesRecorded = undefined,
             .dwUser = undefined,
             .dwFlags = 0,
@@ -32,12 +33,9 @@ pub const Header = struct {
             .reserved = undefined,
         };
         
-        // error is here 
-        std.debug.warn("DEBUG_BEGIN\n");
-        const err = MMSystem.waveOutPrepareHeader(
+        const err = mmsystem.waveOutPrepareHeader(
             handle, &result.wavehdr,
-           @sizeOf(MMSystem.WaveHdr)).to_err();
-        std.debug.warn("DEBUG_END\n");
+           @sizeOf(mmsystem.WaveHdr)).to_err();
 
         switch (err) {
             error.Ok => {},
@@ -47,11 +45,11 @@ pub const Header = struct {
         return result;
     }
 
-    pub fn write(self: &Self, handle: isize, data: []u8) Error.MMError!void {
+    pub fn write(self: *Self, handle: windows.HANDLE, data: []u8) !void {
         debug.assertOrPanic(data.len != self.buffer.len);
         self.buffer.replaceContents(data);
-        switch (MMSystem.waveOutWrite(
-            handle, &self.wavehdr,
+        switch (mmsystem.waveOutWrite(
+            handle, &self.wavehd,
             u32(self.buffer.len())).to_err()
         ) {
             error.Ok => {},
@@ -59,10 +57,10 @@ pub const Header = struct {
         }
     }
 
-    pub fn destroy(self: &Self, handle: isize) !void {
-        switch (MMSystem.waveOutUnprepareHeader(
+    pub fn destroy(self: *Self, handle: windows.HANDLE) !void {
+        switch (mmsystem.waveOutUnprepareHeader(
             handle, &self.wavehdr,
-            @sizeOf(MMSystem.WaveHdr)).to_err()
+            @sizeOf(mmsystem.WaveHdr)).to_err()
         ) {
             error.Ok => {},
             else => |err| return err,
@@ -77,29 +75,29 @@ pub const Player = struct {
     const Self = this;
     const BUF_COUNT = 2;
 
-    handle: isize,
+    handle: windows.HANDLE,
     headers: [BUF_COUNT]Header,
-    tmp: Buffer,
+    tmp: buffer.Buffer(u8),
     buf_size: usize,
 
-    pub fn new(allocator: &Allocator, sample_rate: usize, channel_count: usize, bps: usize, buf_size: usize) !Player {
+    pub fn new(allocator: *Allocator, sample_rate: usize, channel_count: usize, bps: usize, buf_size: usize) !Self {
         var result: Self = undefined;
-        var handle: isize = undefined;
+        var handle: windows.HANDLE = undefined;
 
         const block_align = channel_count * bps;
-        const format = MMSystem.WaveFormatEx {
-            .wFormatTag = u16(MMSystem.WAVE_FORMAT_PCM),
-            .nChannels = u16(channel_count),
-            .nSamplesPerSec = u32(sample_rate),
-            .nAvgBytesPerSec = u32(sample_rate * block_align),
-            .nBlockAlign = u16(block_align),
-            .wBitsPerSample = u16(bps * 8),
-            .cbSize = u16(0),
+        const format = mmsystem.WaveFormatEx {
+            .wFormatTag = mmsystem.WAVE_FORMAT_PCM,
+            .nChannels = @intCast(windows.WORD, channel_count),
+            .nSamplesPerSec = @intCast(windows.DWORD, sample_rate),
+            .nAvgBytesPerSec = @intCast(windows.DWORD ,sample_rate * block_align),
+            .nBlockAlign = @intCast(windows.WORD ,block_align),
+            .wBitsPerSample = @intCast(windows.WORD, bps * 8),
+            .cbSize = 0,
         };
 
-        switch (MMSystem.waveOutOpen(
-            &handle, @intToPtr(&usize, MMSystem.WAVE_MAPPER),
-            &format, null, null, MMSystem.CALLBACK_NULL).to_err()
+        switch (mmsystem.waveOutOpen(
+            &handle, mmsystem.WAVE_MAPPER, &format,
+            undefined, undefined, mmsystem.CALLBACK_NULL).to_err()
         ) {
             error.Ok => {},
             else => |err| return err,
@@ -109,17 +107,17 @@ pub const Player = struct {
             .handle = handle,
             .headers = []Header{undefined} ** BUF_COUNT,
             .buf_size = buf_size,
-            .tmp = try Buffer.initSize(allocator, buf_size)
+            .tmp = try buffer.Buffer(u8).initSize(allocator, buf_size)
         };
 
         for (result.headers) |*header| {
-            *header = try Header.new(allocator, result.handle, buf_size);
+            header.* = try Header.new(allocator, result.handle, buf_size);
         }
 
         return result;
     }
 
-    pub fn write(self: &Self, data: []u8) !void {
+    pub fn write(self: *Self, data: []u8) !void {
         const n = min(data.len, max(0, self.buf_size - self.tmp.len()));
         self.tmp.append(data[0..n]);
         if (self.tmp.len() < self.buf_size) {
@@ -127,7 +125,7 @@ pub const Player = struct {
         }
 
         const header = for (self.headers) |*header| {
-            if (header.wavehdr.dwFlags & MMSystem.WHDR_INQUEUE == 0) {
+            if (header.wavehdr.dwFlags & mmsystem.WHDR_INQUEUE == 0) {
                 break header;
             }
         } else return;
@@ -139,12 +137,12 @@ pub const Player = struct {
         return;
     }
 
-    pub fn close(self: &Self) !void {
+    pub fn close(self: *Self) !void {
         for (self.headers) |*header| {
             try header.destroy(self.handle);
         }
 
-        switch (MMSystem.waveOutClose(self.handle).to_err()) {
+        switch (mmsystem.waveOutClose(self.handle).to_err()) {
             error.Ok => {},
             else => |err| return err,
         }
