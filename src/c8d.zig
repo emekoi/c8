@@ -32,7 +32,7 @@ fn info(comptime fmt: []const u8, args: ...) void {
 }
 
 fn invalid() void {
-    info("invalid instruction\n");
+    info("invalid or malformed instruction\n");
 }
 
 fn to_addr(bytes: []const u8) u12 {
@@ -114,7 +114,7 @@ fn disassemble(bytes: []const u8, pc: usize) void {
                 else => invalid(),
             }
         },
-        else => info("{x} not handled\n", nibbles[0]),
+        else => invalid(),
     }
 }
 
@@ -137,7 +137,7 @@ pub fn main() !void {
     _ = try file.read(data[0..]);
     var pc: usize = 0;
 
-    info("{} - {} bytes - {} len\n---------------------------------------\n", filename, size, data.len);
+    info("{} - {} bytes\n---------------------------------------\n", filename, size);
 
     while (pc <= data.len / 2) {
         disassemble(data[pc..], pc);
