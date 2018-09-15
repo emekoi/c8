@@ -1,13 +1,23 @@
 const std = @import("std");
 const Builder = std.build.Builder;
 
+pub const Executable = struct {
+    output: []const u8,
+    input: []const u8,
+};
+
+const executables = []Executable {
+    Executable { .output = "../bin/c8dis", .input = "src/c8d.zig"}
+};
+
 pub fn build(b: *Builder) !void {
     const mode = b.standardReleaseOptions();
-    const exe = b.addExecutable("../bin/c8dis", "src/c8d.zig");
-    exe.setBuildMode(mode);
-
     try b.makePath("bin");
 
-    b.default_step.dependOn(&exe.step);
-    b.installArtifact(exe);
+    for (executables) |file| {
+        const exe = b.addExecutable(file.output, file.input);
+        exe.setBuildMode(mode);
+        b.default_step.dependOn(&exe.step);
+        b.installArtifact(exe);
+    }
 }
