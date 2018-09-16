@@ -7,7 +7,8 @@ pub const Executable = struct {
 };
 
 const executables = []Executable {
-    Executable { .output = "../bin/c8dis", .input = "src/c8d.zig"}
+    Executable { .output = "../bin/c8dasm", .input = "src/c8dasm.zig"},
+    Executable { .output = "../bin/c8run", .input = "src/c8run.zig"}
 };
 
 pub fn build(b: *Builder) !void {

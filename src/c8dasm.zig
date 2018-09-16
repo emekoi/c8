@@ -139,8 +139,7 @@ pub fn main() !void {
 
     info("{} - {} bytes\n---------------------------------------\n", filename, size);
 
-    while (pc <= data.len / 2) {
+    while (pc < data.len) : (pc += 2) {
         disassemble(data[pc..], pc);
-        pc += 2;
     }    
 }
