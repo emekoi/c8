@@ -6,7 +6,7 @@
 
 const std = @import("std");
 const alloc = @import("util/alloc.zig");
-const buffer = @import("util/buffer.zig");
+const Buffer = @import("util/buffer.zig").Buffer;
 const io = std.io;
 const os = std.os;
 
@@ -44,7 +44,7 @@ fn to_addr(bytes: []const u8) u12 {
 }
 
 fn disassemble(bytes: []const u8, pc: usize) void {
-    const nibbles = []u8{
+    const nibbles = []u8.{
         (bytes[0] & 0xF0) >> 4,
         (bytes[0] & 0x0F) >> 0,
         (bytes[1] & 0xF0) >> 4,
@@ -130,7 +130,7 @@ pub fn main() !void {
     defer file.close();
 
     const size = try file.getEndPos();
-    var tmp = try buffer.Buffer(u8).initSize(alloc.global, size);
+    var tmp = try Buffer(u8).initSize(alloc.global, size);
     var data = tmp.toOwnedSlice();
     tmp.deinit();
     

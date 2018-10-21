@@ -9,8 +9,8 @@ pub const std = @import("std");
 const warn = std.debug.warn;
 const mem = std.mem;
 
-pub const Display = struct {
-    const Self = this;
+pub const Display = struct.{
+    const Self = @This();
 
     pixels: [0x800]u8,
 

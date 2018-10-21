@@ -9,8 +9,8 @@ const windows = @import("windows/index.zig");
 const time = std.os.time;
 
 fn PlayerImpl(comptime T: type) type {
-    return struct {
-        const Self = this;
+    return struct.{
+        const Self = @This();
         const Second = 1000000000;
 
         player: T,
@@ -20,7 +20,7 @@ fn PlayerImpl(comptime T: type) type {
         buf_size: usize,
 
         pub fn new(allocator: *std.mem.Allocator, sample_rate: usize, channel_count: usize, bps: usize, buf_size: usize) !Self {
-            return Self {
+            return Self.{
                 .player = try T.new(allocator, sample_rate, channel_count, bps, buf_size),
                 .sample_rate = sample_rate,
                 .channel_count = channel_count,

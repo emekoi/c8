@@ -4,8 +4,7 @@
 //  under the terms of the MIT license. See LICENSE for details.
 //
 
-pub const MMError = error {
-    Ok,
+pub const MMError = error.{
     Error,
     BadDeviceID,
     Allocated,
@@ -18,7 +17,7 @@ pub const MMError = error {
     Sync,
 };
 
-pub const MMRESULT = extern enum(u32) {
+pub const MMRESULT = extern enum(u32).{
     MMSYSERR_NOERROR = 0,
     MMSYSERR_ERROR = 1,
     MMSYSERR_BADDEVICEID = 2,
@@ -31,9 +30,9 @@ pub const MMRESULT = extern enum(u32) {
     WAVERR_UNPREPARED = 34,
     WAVERR_SYNC = 35,
 
-    pub fn to_err(self: MMRESULT) MMError {
+    pub fn to_err(self: MMRESULT) MMError!void {
         return switch (self) {
-            MMRESULT.MMSYSERR_NOERROR => MMError.Ok,
+            MMRESULT.MMSYSERR_NOERROR => {},
             MMRESULT.MMSYSERR_ERROR => MMError.Error,
             MMRESULT.MMSYSERR_BADDEVICEID => MMError.BadDeviceID,
             MMRESULT.MMSYSERR_ALLOCATED => MMError.Allocated,

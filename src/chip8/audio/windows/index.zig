@@ -8,13 +8,12 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const windows = std.os.windows;
 
-const buffer = @import("../util/buffer.zig");
-const _ = @import("errors.zig");
+use @import("errors.zig");
+const Buffer = @import("../util/buffer.zig");
 const mmsystem = @import("mmsystem.zig");
 
-
-pub const Header = struct {
-    const Self = this;
+pub const Header = struct.{
+    const Self = @This();
     buffer: buffer.Buffer(u8),
     wavehdr: mmsystem.WaveHdr,
 
@@ -22,7 +21,7 @@ pub const Header = struct {
         var result: Self = undefined;
 
         result.buffer = try buffer.Buffer(u8).initSize(allocator, buf_size);
-        result.wavehdr = mmsystem.WaveHdr {
+        result.wavehdr = mmsystem.WaveHdr.{
             .lpData = result.buffer.ptr(),
             .dwBufferLength = @intCast(windows.DWORD, buf_size),
             .dwBytesRecorded = undefined,
@@ -33,14 +32,9 @@ pub const Header = struct {
             .reserved = undefined,
         };
         
-        const err = mmsystem.waveOutPrepareHeader(
+        try mmsystem.waveOutPrepareHeader(
             handle, &result.wavehdr,
            @sizeOf(mmsystem.WaveHdr)).to_err();
-
-        switch (err) {
-            error.Ok => {},
-            else => |e| return e,
-        }
         
         return result;
     }
@@ -48,31 +42,21 @@ pub const Header = struct {
     pub fn write(self: *Self, handle: windows.HANDLE, data: []u8) !void {
         debug.assertOrPanic(data.len != self.buffer.len);
         self.buffer.replaceContents(data);
-        switch (mmsystem.waveOutWrite(
+        try mmsystem.waveOutWrite(
             handle, &self.wavehd,
-            u32(self.buffer.len())).to_err()
-        ) {
-            error.Ok => {},
-            else => |err| return err,
-        }
+            @intCast(windows.UINT, self.buffer.len())).to_err();
     }
 
     pub fn destroy(self: *Self, handle: windows.HANDLE) !void {
-        switch (mmsystem.waveOutUnprepareHeader(
+        try mmsystem.waveOutUnprepareHeader(
             handle, &self.wavehdr,
-            @sizeOf(mmsystem.WaveHdr)).to_err()
-        ) {
-            error.Ok => {},
-            else => |err| return err,
-        }
-
+            @sizeOf(mmsystem.WaveHdr)).to_err();
         self.buffer.deinit();
     }
 };
 
-
-pub const Player = struct {
-    const Self = this;
+pub const Player = struct.{
+    const Self = @This();
     const BUF_COUNT = 2;
 
     handle: windows.HANDLE,
@@ -85,7 +69,7 @@ pub const Player = struct {
         var handle: windows.HANDLE = undefined;
 
         const block_align = channel_count * bps;
-        const format = mmsystem.WaveFormatEx {
+        const format = mmsystem.WaveFormatEx.{
             .wFormatTag = mmsystem.WAVE_FORMAT_PCM,
             .nChannels = @intCast(windows.WORD, channel_count),
             .nSamplesPerSec = @intCast(windows.DWORD, sample_rate),
@@ -95,19 +79,15 @@ pub const Player = struct {
             .cbSize = 0,
         };
 
-        switch (mmsystem.waveOutOpen(
+        try mmsystem.waveOutOpen(
             &handle, mmsystem.WAVE_MAPPER, &format,
-            undefined, undefined, mmsystem.CALLBACK_NULL).to_err()
-        ) {
-            error.Ok => {},
-            else => |err| return err,
-        }
+            null, null, mmsystem.CALLBACK_NULL).to_err();
 
-        result = Player {
+        result = Self.{
             .handle = handle,
-            .headers = []Header{undefined} ** BUF_COUNT,
+            .headers = []Header.{undefined} ** BUF_COUNT,
             .buf_size = buf_size,
-            .tmp = try buffer.Buffer(u8).initSize(allocator, buf_size)
+            .tmp = try Buffer(u8).initSize(allocator, buf_size)
         };
 
         for (result.headers) |*header| {
@@ -142,10 +122,7 @@ pub const Player = struct {
             try header.destroy(self.handle);
         }
 
-        switch (mmsystem.waveOutClose(self.handle).to_err()) {
-            error.Ok => {},
-            else => |err| return err,
-        }
+        try mmsystem.waveOutClose(self.handle).to_err();
 
         self.tmp.deinit();
         

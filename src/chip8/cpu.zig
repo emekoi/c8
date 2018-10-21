@@ -13,16 +13,16 @@ const time= std.os.time;
 const rand = std.rand;
 const mem = std.mem;
 
-pub const CPU = struct {
-    const Self = this;
+pub const CPU = struct.{
+    const Self = @This();
 
-    pub const Exception = error {
+    pub const Exception = error.{
         InvalidOpcode,
         StackUnderflow,
         StackOverflow,
     };
 
-    const font_set = [80]u8{
+    const font_set = [80]u8.{
         0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
         0x20, 0x60, 0x20, 0x20, 0x70, // 1
         0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
@@ -65,18 +65,18 @@ pub const CPU = struct {
     prng: rand.DefaultPrng,
 
     pub fn new() Self {
-        return Self {
+        return Self.{
             .i = 0x0,
             .pc = 0x200,
-            .memory = []u8{0} ** 0x1000,
-            .v = []u8{0x0} ** 0x10,
-            .keypad = Keypad {
-                .keys = []u8{0x0} ** 0x10,
+            .memory = []u8.{0} ** 0x1000,
+            .v = []u8.{0x0} ** 0x10,
+            .keypad = Keypad.{
+                .keys = []u8.{0x0} ** 0x10,
             },
-            .display = Display {
-                .pixels = []u8{0x0} ** 0x800,
+            .display = Display.{
+                .pixels = []u8.{0x0} ** 0x800,
             },
-            .stack = []u16{0x0} ** 0x10,
+            .stack = []u16.{0x0} ** 0x10,
             .sp = 0x0,
             .delay = 0x0,
             .sound = 0x0,
@@ -90,23 +90,23 @@ pub const CPU = struct {
     }
 
     pub fn step(self: *Self) !void {
-        const opcode = blk: {
+        const opcode = {
             var tmp = u16(self.memory[self.pc]) << 8;
-            break :blk tmp | u16(self.memory[self.pc + 1]);
+            tmp | u16(self.memory[self.pc + 1]);
         };
         try self.process(opcode);
         warn("\n");
     }
 
     pub fn process(self: *Self, opcode: u16) Exception!void {
-        const nibbles = []u8{
+        const nibbles = []u8.{
             @truncate(u8, (opcode & 0xF000) >> 12),
             @truncate(u8, (opcode & 0x0F00) >> 8),
             @truncate(u8, (opcode & 0x00F0) >> 4),
             @truncate(u8, (opcode & 0x000F) >> 0),
         };
 
-        const bytes = []u8 {
+        const bytes = []u8.{
             @truncate(u8, (opcode & 0xFF00) >> 8),
             @truncate(u8, (opcode & 0x00FF) >> 0),
         };
@@ -140,8 +140,8 @@ pub const CPU = struct {
                 if (self.sp > self.stack.len) {
                     return error.StackOverflow;
                 }
+                self.stack[self.sp] = self.pc + 2;
                 self.sp += 1;
-                self.stack[self.sp] = self.pc;
                 self.pc = opcode & 0x0FFF;
                 return;
             },

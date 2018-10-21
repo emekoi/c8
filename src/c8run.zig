@@ -6,7 +6,7 @@
 
 const std = @import("std");
 const alloc = @import("util/alloc.zig");
-const buffer = @import("util/buffer.zig");
+const Buffer = @import("util/buffer.zig").Buffer;
 const CPU = @import("chip8/cpu.zig").CPU;
 
 const io = std.io;
@@ -24,7 +24,7 @@ pub fn main() !void {
     defer file.close();
 
     const size = try file.getEndPos();
-    var tmp = try buffer.Buffer(u8).initSize(alloc.global, size);
+    var tmp = try Buffer(u8).initSize(alloc.global, size);
     var data = tmp.toOwnedSlice();
     tmp.deinit();
     

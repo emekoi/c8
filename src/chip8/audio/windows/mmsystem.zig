@@ -14,7 +14,7 @@ pub const CALLBACK_NULL = 0x0;
 
 pub const UINT_PTR = usize;
 
-pub const WaveHdr = extern struct {
+pub const WaveHdr = extern struct.{
     lpData: windows.LPSTR,
     dwBufferLength: windows.DWORD,
     dwBytesRecorded: windows.DWORD,
@@ -25,7 +25,7 @@ pub const WaveHdr = extern struct {
     reserved: windows.DWORD_PTR,
 };
 
-pub const WaveFormatEx = extern struct {
+pub const WaveFormatEx = extern struct.{
     wFormatTag: windows.WORD,
     nChannels: windows.WORD,
     nSamplesPerSec: windows.DWORD,
@@ -37,8 +37,8 @@ pub const WaveFormatEx = extern struct {
 
 
 pub extern "winmm" stdcallcc fn waveOutOpen(phwo: *windows.HANDLE, uDeviceID: UINT_PTR,
-    pwfx: *const WaveFormatEx, dwCallback: windows.DWORD,
-    dwCallbackInstance: windows.DWORD, fdwOpen: windows.DWORD) MMRESULT;
+    pwfx: *const WaveFormatEx, dwCallback: ?windows.DWORD_PTR,
+    dwCallbackInstance: ?windows.DWORD_PTR, fdwOpen: windows.DWORD) MMRESULT;
 
 pub extern "winmm" stdcallcc fn waveOutClose(hwo: windows.HANDLE) MMRESULT;
 
